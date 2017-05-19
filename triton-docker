@@ -25,4 +25,4 @@ fi
 
 eval "$(triton env)"
 
-exec /usr/local/bin/triton-docker-helper $1
+exec /usr/local/bin/triton-docker-helper $@
