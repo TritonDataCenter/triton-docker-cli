@@ -12,9 +12,12 @@ then
 echo "Triton-docker needs to install an application to continue."
 echo "This installation will only happen once."
 
+# Check if triton is installed and executable
+command -v curl >/dev/null 2>&1 || { echo >&2 "curl is required to complete this installation. Please install before continuing."; exit 1; }
+
 rm -Rf /tmp/triton-docker /usr/local/bin/triton-docker-helper
 mkdir -p /tmp/triton-docker
-curl https://get.docker.com/builds/$(uname -a | awk '{ print $1 }')/$(file /bin/sh | awk '{ print $NF }')/docker-1.12.6.tgz | tar zxvf - -C /tmp/triton-docker
+curl https://get.docker.com/builds/$(uname -a | awk '{ print $1 }')/x86_64/docker-1.12.6.tgz | tar zxvf - -C /tmp/triton-docker
 mv /tmp/triton-docker/docker/docker /usr/local/bin/triton-docker-helper
 rm -Rf /tmp/triton-docker
 chmod +x /usr/local/bin/triton-docker-helper
