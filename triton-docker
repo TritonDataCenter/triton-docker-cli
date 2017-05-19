@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+triton_docker_version=1.12.6
+triton_compose_version=1.9.0
+
 # Check if triton is installed and executable
 function checkTritonInstalled () {
     command -v triton >/dev/null 2>&1 || { echo >&2 "Triton CLI tools do not appear to be installed. Please install before continuing."; exit 1; }
@@ -29,10 +32,10 @@ function checkDockerInstalled () {
     if 
         [ ! -f /usr/local/bin/triton-docker-helper ] || 
         [ ! -x /usr/local/bin/triton-docker-helper ] ||
-        [ '1.12.6,' != $(/usr/local/bin/triton-docker-helper -v | awk '{print $3}') ] ||
+        [ "${triton_docker_version}," != $(/usr/local/bin/triton-docker-helper -v | awk '{print $3}') ] ||
         [ ! -f /usr/local/bin/triton-compose-helper ] ||
         [ ! -x /usr/local/bin/triton-compose-helper ] ||
-        [ '1.9.0,' != $(/usr/local/bin/triton-compose-helper -v | awk '{print $3}') ]
+        [ "${triton_compose_version}," != $(/usr/local/bin/triton-compose-helper -v | awk '{print $3}') ]
     then
         echo 'Additional or updated components are required.'
         echo 'Please run `sudo triton-docker-install` to continue.'
@@ -52,7 +55,7 @@ function install () {
     # Install the specific version of Docker for Triton
     rm -Rf /tmp/triton-docker /usr/local/bin/triton-docker-helper
     mkdir -p /tmp/triton-docker
-    curl https://get.docker.com/builds/$(uname -a | awk '{ print $1 }')/x86_64/docker-1.12.6.tgz | tar zxvf - -C /tmp/triton-docker
+    curl https://get.docker.com/builds/$(uname -a | awk '{ print $1 }')/x86_64/docker-${triton_docker_version}.tgz | tar zxvf - -C /tmp/triton-docker
     mv /tmp/triton-docker/docker/docker /usr/local/bin/triton-docker-helper
     rm -Rf /tmp/triton-docker
     chmod +x /usr/local/bin/triton-docker-helper
@@ -61,14 +64,14 @@ function install () {
     echo
 
     # Install the specific version of Docker Compose for Triton
-    curl -Lo /usr/local/bin/triton-compose-helper https://github.com/docker/compose/releases/download/1.9.0/docker-compose-$(uname -a | awk '{ print $1 }')-x86_64
+    curl -Lo /usr/local/bin/triton-compose-helper https://github.com/docker/compose/releases/download/${triton_compose_version}/docker-compose-$(uname -a | awk '{ print $1 }')-x86_64
     chmod +x /usr/local/bin/triton-compose-helper
 
     echo "The triton-compose-helper is now installed."
     echo
 }
 
-# Install architecture-specific Docker and Docker Compose binaries
+# Run all checks
 function checkAll () {
     checkTritonInstalled &&
     checkDockerInstalled &&
