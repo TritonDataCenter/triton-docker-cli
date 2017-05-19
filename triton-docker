@@ -11,6 +11,11 @@ function checkCurlInstalled () {
     command -v curl >/dev/null 2>&1 || { echo >&2 "curl is required to complete this installation. Please install before continuing."; exit 1; }
 }
 
+# Emit the current Triton profile and time
+function currentProfile () {
+    echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' at $(date +'%r')"
+}
+
 # Check if the Docker binary (named triton-docker-helper) is installed and executable
 # ...install it if not
 function checkDockerInstalled () {
@@ -57,12 +62,14 @@ case "`basename $0`" in
     triton-docker)
         checkTritonInstalled &&
         checkDockerInstalled &&
+        currentProfile &&
         eval "$(triton env)" &&
         exec /usr/local/bin/triton-docker-helper $@
         ;;
     triton-compose)
         checkTritonInstalled &&
         checkComposeInstalled &&
+        currentProfile &&
         eval "$(triton env)" &&
         export COMPOSE_HTTP_TIMEOUT=750 &&
         exec /usr/local/bin/triton-compose-helper $@
