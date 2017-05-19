@@ -13,7 +13,14 @@ function checkCurlInstalled () {
 
 # Emit the current Triton profile and time
 function currentProfile () {
-    echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' at $(date +'%r')"
+    if [ -n "$TRITON_PROFILE" ]
+    then
+        local profile_source='via env var; use `eval "$(triton env <profile name>)"` to change'
+    else
+        local profile_source='default; use `triton profile set <profile name>` to change'
+    fi
+
+    echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' (${profile_source}) at $(date +'%r')"
 }
 
 # Check if the Docker binary (named triton-docker-helper) is installed and executable
