@@ -2,30 +2,69 @@
 set -e
 
 # Check if triton is installed and executable
-command -v triton >/dev/null 2>&1 || { echo >&2 "Triton CLI tools do not appear to be installed. Please install before continuing."; exit 1; }
+function checkTritonInstalled () {
+    command -v triton >/dev/null 2>&1 || { echo >&2 "Triton CLI tools do not appear to be installed. Please install before continuing."; exit 1; }
+}
 
-# Check if the helper Go binary is installed and executable
+# Check if curl is installed and executable
+function checkCurlInstalled () {
+    command -v curl >/dev/null 2>&1 || { echo >&2 "curl is required to complete this installation. Please install before continuing."; exit 1; }
+}
+
+# Check if the Docker binary (named triton-docker-helper) is installed and executable
 # ...install it if not
-if [ ! -f /usr/local/bin/triton-docker-helper ] || [ ! -x /usr/local/bin/triton-docker-helper ]
-then
+function checkDockerInstalled () {
+    if [ ! -f /usr/local/bin/triton-docker-helper ] || [ ! -x /usr/local/bin/triton-docker-helper ]
+    then
+        echo "Triton-docker needs to install an application to continue."
+        echo "This installation will only happen once."
 
-echo "Triton-docker needs to install an application to continue."
-echo "This installation will only happen once."
+        # Check if triton is installed and executable
+        command -v curl >/dev/null 2>&1 || { echo >&2 "curl is required to complete this installation. Please install before continuing."; exit 1; }
 
-# Check if triton is installed and executable
-command -v curl >/dev/null 2>&1 || { echo >&2 "curl is required to complete this installation. Please install before continuing."; exit 1; }
+        rm -Rf /tmp/triton-docker /usr/local/bin/triton-docker-helper
+        mkdir -p /tmp/triton-docker
+        curl https://get.docker.com/builds/$(uname -a | awk '{ print $1 }')/x86_64/docker-1.12.6.tgz | tar zxvf - -C /tmp/triton-docker
+        mv /tmp/triton-docker/docker/docker /usr/local/bin/triton-docker-helper
+        rm -Rf /tmp/triton-docker
+        chmod +x /usr/local/bin/triton-docker-helper
 
-rm -Rf /tmp/triton-docker /usr/local/bin/triton-docker-helper
-mkdir -p /tmp/triton-docker
-curl https://get.docker.com/builds/$(uname -a | awk '{ print $1 }')/x86_64/docker-1.12.6.tgz | tar zxvf - -C /tmp/triton-docker
-mv /tmp/triton-docker/docker/docker /usr/local/bin/triton-docker-helper
-rm -Rf /tmp/triton-docker
-chmod +x /usr/local/bin/triton-docker-helper
+        echo "The triton-docker-helper is now installed."
+        echo
+    fi
+}
 
-echo "The triton-docker-helper is now installed."
-echo
-fi
+# Check if Docker Compose (named triton-compose-helper) is installed and executable
+# ...install it if not
+function checkComposeInstalled () {
+    if [ ! -f /usr/local/bin/triton-compose-helper ] || [ ! -x /usr/local/bin/triton-compose-helper ]
+    then
+        echo "Triton-compose needs to install an application to continue."
+        echo "This installation will only happen once."
 
-eval "$(triton env)"
+        # Check if curl is installed and executable
+        checkCurlInstalled
 
-exec /usr/local/bin/triton-docker-helper $@
+        curl -Lo /usr/local/bin/triton-compose-helper https://github.com/docker/compose/releases/download/1.9.0/docker-compose-$(uname -a | awk '{ print $1 }')-x86_64
+        chmod +x /usr/local/bin/triton-compose-helper
+
+        echo "The triton-compose-helper is now installed."
+        echo
+    fi
+}
+
+case "`basename $0`" in
+    triton-docker)
+        checkTritonInstalled &&
+        checkDockerInstalled &&
+        eval "$(triton env)" &&
+        exec /usr/local/bin/triton-docker-helper $@
+        ;;
+    triton-compose)
+        checkTritonInstalled &&
+        checkComposeInstalled &&
+        eval "$(triton env)" &&
+        export COMPOSE_HTTP_TIMEOUT=750 &&
+        exec /usr/local/bin/triton-compose-helper $@
+        ;;
+esac
