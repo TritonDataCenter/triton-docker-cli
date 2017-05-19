@@ -1,0 +1,96 @@
+#!/bin/bash
+set -e
+
+triton_docker_version=1.12.6
+triton_compose_version=1.9.0
+
+# Check if triton is installed and executable
+function checkTritonInstalled () {
+    command -v triton >/dev/null 2>&1 || { echo >&2 "Triton CLI tools do not appear to be installed. Please install before continuing."; exit 1; }
+}
+
+# Check if curl is installed and executable
+function checkCurlInstalled () {
+    command -v curl >/dev/null 2>&1 || { echo >&2 "curl is required to complete this installation. Please install before continuing."; exit 1; }
+}
+
+# Emit the current Triton profile and time
+function currentProfile () {
+    if [ -n "$TRITON_PROFILE" ]
+    then
+        local profile_source='via env var; use `eval "$(triton env <profile name>)"` to change'
+    else
+        local profile_source='default; use `triton profile set <profile name>` to change'
+    fi
+
+    echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' (${profile_source}) at $(date +'%r')"
+}
+
+# Check if the Docker binary (named triton-docker-helper)
+# and Docker Compose (named triton-compose-helper) are installed and executable
+function checkDockerInstalled () {
+    if 
+        [ ! -f /usr/local/bin/triton-docker-helper ] || 
+        [ ! -x /usr/local/bin/triton-docker-helper ] ||
+        [ "${triton_docker_version}," != $(/usr/local/bin/triton-docker-helper -v | awk '{print $3}') ] ||
+        [ ! -f /usr/local/bin/triton-compose-helper ] ||
+        [ ! -x /usr/local/bin/triton-compose-helper ] ||
+        [ "${triton_compose_version}," != $(/usr/local/bin/triton-compose-helper -v | awk '{print $3}') ]
+    then
+        echo 'Additional or updated components are required.'
+        echo 'Please run `sudo triton-docker-install` to continue.'
+        echo
+        exit 1
+    fi
+}
+
+# Install architecture-specific Docker and Docker Compose binaries
+function install () {
+    echo "Triton needs to install additional components for Docker and Docker Compose interactions."
+    echo "This installation will only happen once."
+
+    # Check if curl is installed and executable
+    checkCurlInstalled
+
+    # Install the specific version of Docker for Triton
+    rm -Rf /tmp/triton-docker /usr/local/bin/triton-docker-helper
+    mkdir -p /tmp/triton-docker
+    curl https://get.docker.com/builds/$(uname -a | awk '{ print $1 }')/x86_64/docker-${triton_docker_version}.tgz | tar zxvf - -C /tmp/triton-docker
+    mv /tmp/triton-docker/docker/docker /usr/local/bin/triton-docker-helper
+    rm -Rf /tmp/triton-docker
+    chmod +x /usr/local/bin/triton-docker-helper
+
+    echo "The triton-docker-helper is now installed."
+    echo
+
+    # Install the specific version of Docker Compose for Triton
+    curl -Lo /usr/local/bin/triton-compose-helper https://github.com/docker/compose/releases/download/${triton_compose_version}/docker-compose-$(uname -a | awk '{ print $1 }')-x86_64
+    chmod +x /usr/local/bin/triton-compose-helper
+
+    echo "The triton-compose-helper is now installed."
+    echo
+}
+
+# Run all checks
+function checkAll () {
+    checkTritonInstalled &&
+    checkDockerInstalled &&
+    currentProfile
+}
+
+case "`basename $0`" in
+    triton-docker)
+        checkAll &&
+        eval "$(triton env)" &&
+        exec /usr/local/bin/triton-docker-helper $@
+        ;;
+    triton-compose)
+        checkAll &&
+        eval "$(triton env)" &&
+        export COMPOSE_HTTP_TIMEOUT=750 &&
+        exec /usr/local/bin/triton-compose-helper $@
+        ;;
+    triton-docker-install)
+        install
+        ;;
+esac
