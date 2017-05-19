@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+# Check if triton is installed and executable
+command -v triton >/dev/null 2>&1 || { echo >&2 "Triton CLI tools do not appear to be installed. Please install before continuing."; exit 1; }
+
+# Check if the helper Go binary is installed and executable
+# ...install it if not
+if [ ! -f /usr/local/bin/triton-docker-helper ] || [ ! -x /usr/local/bin/triton-docker-helper ]
+then
+
+echo "Triton-docker needs to install an application to continue."
+echo "This installation will only happen once."
+
+rm -Rf /tmp/triton-docker /usr/local/bin/triton-docker-helper
+mkdir -p /tmp/triton-docker
+curl https://get.docker.com/builds/$(uname -a | awk '{ print $1 }')/$(uname -a | awk '{ print $NF }')/docker-1.12.6.tgz | tar zxvf - -C /tmp/triton-docker
+mv /tmp/triton-docker/docker/docker /usr/local/bin/triton-docker-helper
+rm -Rf /tmp/triton-docker
+chmod +x /usr/local/bin/triton-docker-helper
+
+echo "The triton-docker-helper is now installed."
+echo
+fi
+
+eval "$(triton env)"
+
+exec /usr/local/bin/triton-docker-helper $1
