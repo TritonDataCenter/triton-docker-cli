@@ -26,7 +26,37 @@ To complete the installation, run `sudo triton-docker-install` to install the pl
 
 ### Usage
 
-Once installed, use `triton-docker` and `triton-compose` in place of 
+Once installed, use `triton-docker` and `triton-compose` in place of `docker` and `docker-compose` when interacting with the Triton Elastic Docker Host.
+
+Start a Docker container running Nginx container on Triton:
+
+```bash
+$ triton-docker run -d -p 80 --name webserver nginx
+Executing in 'us-sw-1' (default; use `triton profile set <profile name>` to change) at 03:11:11 PM
+d5cae48b0072610ecc67f6aecb3115f9fadff59b2151694a963084dad40e5d85
+$
+```
+
+Start [all the containers to run WordPress](https://github.com/autopilotpattern/wordpress) via Docker Compose on Triton:
+
+```bash
+$ triton-compose up -d
+Executing in 'us-sw-1' (default; use `triton profile set <profile name>` to change) at 03:15:56 PM
+Creating wp_wordpress_1
+Creating wp_nginx_1
+Creating wp_nfs_1
+Creating wp_memcached_1
+Creating wp_prometheus_1
+Creating wp_mysql_1
+Creating wp_consul_1
+$
+```
+
+More about:
+
+- [Docker commands on Triton](https://www.joyent.com/blog/docker-commands-on-triton)
+- [Docker Compose on Triton](https://www.joyent.com/blog/using-docker-compose)
+- [Optimizing your Docker operations for Triton](https://www.joyent.com/blog/optimizing-docker-on-triton)
 
 ### Components
 
