@@ -1,6 +1,6 @@
 # Triton Docker CLI helper
 
-This script installs known-good, tested versions of the Docker (now Moby) and Docker Compose CLI tools for use with Triton.
+This script installs known good, tested versions of the Docker (now Moby) and Docker Compose CLI tools for use with Triton.
 
 Additionally, this script will automatically configure those tools for use with Triton when you use them, making it easy to switch between Docker on your laptop and Docker on Triton.
 
@@ -8,7 +8,7 @@ Additionally, this script will automatically configure those tools for use with 
 
 This is designed and tested for Linux and MacOS X.
 
-This code also requires [the Triton CLI tools](https://docs.joyent.com/public-cloud/api-access/cloudapi) and [a Triton account](https://docs.joyent.com/public-cloud/getting-started) on either the Triton Public Cloud (Joyent public cloud) or in a private cloud powered by Triton.
+This code also requires [the Triton CLI tools](https://docs.joyent.com/public-cloud/api-access/cloudapi) and [a Triton account](https://docs.joyent.com/public-cloud/getting-started) on either Triton public cloud (Joyent public cloud) or in a private cloud powered by Triton.
 
 Use of this software also requires [a Triton profile configured in the Triton CLI tool](https://docs.joyent.com/public-cloud/api-access/cloudapi#configuration).
 
