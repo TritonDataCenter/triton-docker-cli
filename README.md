@@ -1,6 +1,6 @@
 # Triton Docker CLI helper
 
-This script installs known-good, tested versions of the Docker (now Moby) and Docker Compose CLI tools for use with Triton.
+This script installs known good, tested versions of the Docker (now Moby) and Docker Compose CLI tools for use with Triton.
 
 Additionally, this script will automatically configure those tools for use with Triton when you use them, making it easy to switch between Docker on your laptop and Docker on Triton.
 
