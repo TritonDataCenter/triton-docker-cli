@@ -58,6 +58,26 @@ More about:
 - [Docker Compose on Triton](https://www.joyent.com/blog/using-docker-compose)
 - [Optimizing your Docker operations for Triton](https://www.joyent.com/blog/optimizing-docker-on-triton)
 
+### Triton Container Name Service helpers
+
+This will also set some helpful environment variables for using [Triton Container Name Service (CNS)](https://docs.joyent.com/public-cloud/network/cns):
+
+- `TRITON_CNS_SEARCH_DOMAIN_PUBLIC`
+- `TRITON_CNS_SEARCH_DOMAIN_PRIVATE`
+
+Those vars will be automatically set with values appropriate for use in Triton Public Cloud:
+
+```
+TRITON_CNS_SEARCH_DOMAIN_PRIVATE=a42e7881-89d2-459e-bc0b-e9af0bca409a.us-east-3.cns.joyent.com
+TRITON_CNS_SEARCH_DOMAIN_PUBLIC=a42e7881-89d2-459e-bc0b-e9af0bca409a.us-east-3.triton.zone
+```
+
+#### Notes and cautions about CNS env vars
+
+- The mechanism that sets these environment vars only works for Triton Public Cloud. To use Triton Docker CLI with private cloud implementations of Triton, please set the `TRITON_CNS_SEARCH_DOMAIN_PUBLIC` and `TRITON_CNS_SEARCH_DOMAIN_PRIVATE` vars manually
+- These environment variables will be removed following the completion of [CNS-164](https://smartos.org/bugview/CNS-164) and [DOCKER-898](https://smartos.org/bugview/DOCKER-898), which will automatically set the DNS search domain to these values
+- [CNS-164](https://smartos.org/bugview/CNS-164) and [DOCKER-898](https://smartos.org/bugview/DOCKER-898) will also work on private cloud implementations of Triton, solving the problem for everybody
+
 ### Components
 
 In addition to the shell script in this repo, this script will install:
