@@ -14,18 +14,6 @@ function checkCurlInstalled () {
     command -v curl >/dev/null 2>&1 || { echo >&2 "curl is required to complete this installation. Please install before continuing."; exit 1; }
 }
 
-# Emit the current Triton profile and time
-function currentProfile () {
-    if [ -n "$TRITON_PROFILE" ]
-    then
-        local profile_source='via env var; use `eval "$(triton env <profile name>)"` to change'
-    else
-        local profile_source='default; use `triton profile set <profile name>` to change'
-    fi
-
-    echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' (${profile_source})"
-}
-
 # Check if the Docker binary (named triton-docker-helper)
 # and Docker Compose (named triton-compose-helper) are installed and executable
 function checkDockerInstalled () {
@@ -71,6 +59,52 @@ function install () {
     echo
 }
 
+# Emit the current Triton profile and time
+function currentProfile () {
+    if [ -n "$TRITON_PROFILE" ]
+    then
+        local profile_source='via env var; use `eval "$(triton env <profile name>)"` to change'
+    else
+        local profile_source='default; use `triton profile set <profile name>` to change'
+    fi
+
+    echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' (${profile_source})"
+}
+
+# Extra env vars
+function extraEnvVars () {
+
+    # Get the user's UUID and current data center name
+    local triton_account="$(triton account get)"
+    export TRITON_ACCOUNT_UUID="$(echo "$triton_account" | awk -F": " '/id:/{print $2}')"
+    export TRITON_DC="$(triton profile get | awk -F"/" '/url:/{print $3}' | awk -F'.' '{print $1}')"
+
+    # Set the CNS base for public and private names
+    if [ ! -n "$TRITON_CNS_SUFFIX_PUBLIC" ]
+    then
+        export TRITON_CNS_SUFFIX_PUBLIC="${TRITON_ACCOUNT}.${TRITON_DC}.triton.zone"
+    fi
+    if [ ! -n "$TRITON_CNS_SUFFIX_PRIVATE" ]
+    then
+        export TRITON_CNS_SUFFIX_PRIVATE="${TRITON_ACCOUNT}.${TRITON_DC}.cns.joyent.com"
+    fi
+
+    # Check if CNS is enabled, require it
+    local triton_cns_enabled="$(echo "$triton_account" | awk -F": " '/cns/{print $2}')"
+    if [ ! "true" == "$triton_cns_enabled" ]; then
+        echo
+        tput rev  # reverse
+        tput bold # bold
+        echo 'Error! Triton CNS is required and not enabled.'
+        tput sgr0 # clear
+        echo
+        echo 'Please run:'
+        echo '  triton account update triton_cns_enabled=true'
+        echo
+        exit 1
+    fi
+}
+
 # Run all checks
 function checkAll () {
     checkTritonInstalled &&
@@ -89,12 +123,14 @@ case "$(basename $0)" in
     triton-docker)
         checkAll &&
         eval "$(triton env)" &&
+        extraEnvVars &&
         exec /usr/local/bin/triton-docker-helper $@
         ;;
     triton-compose)
         checkAll &&
         eval "$(triton env)" &&
         export COMPOSE_HTTP_TIMEOUT=750 &&
+        extraEnvVars &&
         exec /usr/local/bin/triton-compose-helper $@
         ;;
     triton-docker-install)
