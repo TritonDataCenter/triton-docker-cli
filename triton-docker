@@ -72,7 +72,7 @@ function currentProfile () {
 }
 
 # Set env vars to make using CNS easier
-function CnsEnvVars () {
+function cnsEnvVars () {
 
     # If the CNS env vars are already set, don't bother continuing
     if [ -n "$TRITON_CNS_SEARCH_DOMAIN_PUBLIC" ] && [ -n "$TRITON_CNS_SEARCH_DOMAIN_PRIVATE" ]
@@ -85,7 +85,7 @@ function CnsEnvVars () {
     local triton_url="$(triton profile get | awk -F"/" '/url:/{print $3}')"
 
     # Do not continue if the target is not a Triton Public Cloud data center
-    if [ ! "api.joyent.com" == "$(echo "${triton_url}" | awk -F'.' '{print $2 "." $3 "." $4}')" ]
+    if [ ! ".api.joyent.com" == "${triton_url: -15}" ]
     then
         return
     fi
@@ -137,14 +137,14 @@ case "$(basename $0)" in
     triton-docker)
         checkAll &&
         eval "$(triton env)" &&
-        CnsEnvVars &&
+        cnsEnvVars &&
         exec /usr/local/bin/triton-docker-helper $@
         ;;
     triton-compose)
         checkAll &&
         eval "$(triton env)" &&
         export COMPOSE_HTTP_TIMEOUT=750 &&
-        CnsEnvVars &&
+        cnsEnvVars &&
         exec /usr/local/bin/triton-compose-helper $@
         ;;
     triton-docker-install)
