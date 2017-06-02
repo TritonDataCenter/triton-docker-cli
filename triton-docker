@@ -74,20 +74,14 @@ function currentProfile () {
 # Extra env vars
 function extraEnvVars () {
 
-    # Get the user's UUID and current data center name
-    local triton_account="$(triton account get)"
-    export TRITON_ACCOUNT_UUID="$(echo "$triton_account" | awk -F": " '/id:/{print $2}')"
-    export TRITON_DC="$(triton profile get | awk -F"/" '/url:/{print $3}' | awk -F'.' '{print $1}')"
+    # If the CNS env vars are already set, don't bother continuing
+    if [ -n "$TRITON_CNS_SUFFIX_PUBLIC" ] && [ -n "$TRITON_CNS_SUFFIX_PRIVATE" ]
+    then
+        return
+    fi
 
-    # Set the CNS base for public and private names
-    if [ ! -n "$TRITON_CNS_SUFFIX_PUBLIC" ]
-    then
-        export TRITON_CNS_SUFFIX_PUBLIC="${TRITON_ACCOUNT}.${TRITON_DC}.triton.zone"
-    fi
-    if [ ! -n "$TRITON_CNS_SUFFIX_PRIVATE" ]
-    then
-        export TRITON_CNS_SUFFIX_PRIVATE="${TRITON_ACCOUNT}.${TRITON_DC}.cns.joyent.com"
-    fi
+    # Get and the user's account information for parsing later
+    local triton_account="$(triton account get)"
 
     # Check if CNS is enabled, require it
     local triton_cns_enabled="$(echo "$triton_account" | awk -F": " '/cns/{print $2}')"
@@ -103,6 +97,18 @@ function extraEnvVars () {
         echo
         exit 1
     fi
+
+    # Get the user's UUID
+    local triton_account_uuid="$(echo "$triton_account" | awk -F": " '/id:/{print $2}')"
+
+    # Get current data center name
+    # Note: this makes assumptions that work in our public cloud, but might not work elsewhere
+    # Further note: set TRITON_CNS_SUFFIX_PUBLIC and TRITON_CNS_SUFFIX_PRIVATE to work around this
+    local triton_dc="$(triton profile get | awk -F"/" '/url:/{print $3}' | awk -F'.' '{print $1}')"
+
+    # Set the CNS base for public and private names
+    export TRITON_CNS_SUFFIX_PUBLIC="${triton_account_uuid}.${triton_dc}.triton.zone"
+    export TRITON_CNS_SUFFIX_PRIVATE="${triton_account_uuid}.${triton_dc}.cns.joyent.com"
 }
 
 # Run all checks
