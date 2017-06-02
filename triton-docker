@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -e -o pipefail
 
 triton_docker_version=1.12.6
 triton_compose_version=1.9.0
@@ -71,21 +71,29 @@ function currentProfile () {
     echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' (${profile_source})"
 }
 
-# Extra env vars
-function extraEnvVars () {
+# Set env vars to make using CNS easier
+function CnsEnvVars () {
 
     # If the CNS env vars are already set, don't bother continuing
-    if [ -n "$TRITON_CNS_SUFFIX_PUBLIC" ] && [ -n "$TRITON_CNS_SUFFIX_PRIVATE" ]
+    if [ -n "$TRITON_CNS_SEARCH_DOMAIN_PUBLIC" ] && [ -n "$TRITON_CNS_SEARCH_DOMAIN_PRIVATE" ]
     then
         return
     fi
 
-    # Get and the user's account information for parsing later
+    # Get and the user's account information and CloudAPI URL for parsing later
     local triton_account="$(triton account get)"
+    local triton_url="$(triton profile get | awk -F"/" '/url:/{print $3}')"
+
+    # Do not continue if the target is not a Triton Public Cloud data center
+    if [ ! "api.joyent.com" == "$(echo "${triton_url}" | awk -F'.' '{print $2 "." $3 "." $4}')" ]
+    then
+        return
+    fi
 
     # Check if CNS is enabled, require it
-    local triton_cns_enabled="$(echo "$triton_account" | awk -F": " '/cns/{print $2}')"
-    if [ ! "true" == "$triton_cns_enabled" ]; then
+    local triton_cns_enabled="$(echo "${triton_account}" | awk -F": " '/cns/{print $2}')"
+    if [ ! "true" == "$triton_cns_enabled" ]
+    then
         echo
         tput rev  # reverse
         tput bold # bold
@@ -99,16 +107,16 @@ function extraEnvVars () {
     fi
 
     # Get the user's UUID
-    local triton_account_uuid="$(echo "$triton_account" | awk -F": " '/id:/{print $2}')"
+    local triton_account_uuid="$(echo "${triton_account}" | awk -F": " '/id:/{print $2}')"
 
     # Get current data center name
     # Note: this makes assumptions that work in our public cloud, but might not work elsewhere
     # Further note: set TRITON_CNS_SUFFIX_PUBLIC and TRITON_CNS_SUFFIX_PRIVATE to work around this
-    local triton_dc="$(triton profile get | awk -F"/" '/url:/{print $3}' | awk -F'.' '{print $1}')"
+    local triton_dc="$(echo "${triton_url}" | awk -F'.' '{print $1}')"
 
     # Set the CNS base for public and private names
-    export TRITON_CNS_SUFFIX_PUBLIC="${triton_account_uuid}.${triton_dc}.triton.zone"
-    export TRITON_CNS_SUFFIX_PRIVATE="${triton_account_uuid}.${triton_dc}.cns.joyent.com"
+    export TRITON_CNS_SEARCH_DOMAIN_PUBLIC="${triton_account_uuid}.${triton_dc}.triton.zone"
+    export TRITON_CNS_SEARCH_DOMAIN_PRIVATE="${triton_account_uuid}.${triton_dc}.cns.joyent.com"
 }
 
 # Run all checks
@@ -129,14 +137,14 @@ case "$(basename $0)" in
     triton-docker)
         checkAll &&
         eval "$(triton env)" &&
-        extraEnvVars &&
+        CnsEnvVars &&
         exec /usr/local/bin/triton-docker-helper $@
         ;;
     triton-compose)
         checkAll &&
         eval "$(triton env)" &&
         export COMPOSE_HTTP_TIMEOUT=750 &&
-        extraEnvVars &&
+        CnsEnvVars &&
         exec /usr/local/bin/triton-compose-helper $@
         ;;
     triton-docker-install)
