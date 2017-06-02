@@ -23,7 +23,7 @@ function currentProfile () {
         local profile_source='default; use `triton profile set <profile name>` to change'
     fi
 
-    echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' (${profile_source}) at $(date +'%r')"
+    echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' (${profile_source})"
 }
 
 # Check if the Docker binary (named triton-docker-helper)
@@ -32,10 +32,10 @@ function checkDockerInstalled () {
     if 
         [ ! -f /usr/local/bin/triton-docker-helper ] || 
         [ ! -x /usr/local/bin/triton-docker-helper ] ||
-        [ "${triton_docker_version}," != $(/usr/local/bin/triton-docker-helper -v | awk '{print $3}') ] ||
+        [ "${triton_docker_version}," != "$(/usr/local/bin/triton-docker-helper -v | awk '{print $3}')" ] ||
         [ ! -f /usr/local/bin/triton-compose-helper ] ||
         [ ! -x /usr/local/bin/triton-compose-helper ] ||
-        [ "${triton_compose_version}," != $(/usr/local/bin/triton-compose-helper -v | awk '{print $3}') ]
+        [ "${triton_compose_version}," != "$(/usr/local/bin/triton-compose-helper -v | awk '{print $3}')" ]
     then
         echo 'Additional or updated components are required.'
         echo 'Please run `sudo triton-docker-install` to continue.'
@@ -55,7 +55,7 @@ function install () {
     # Install the specific version of Docker for Triton
     rm -Rf /tmp/triton-docker /usr/local/bin/triton-docker-helper
     mkdir -p /tmp/triton-docker
-    curl https://get.docker.com/builds/$(uname -a | awk '{ print $1 }')/x86_64/docker-${triton_docker_version}.tgz | tar zxvf - -C /tmp/triton-docker
+    curl https://get.docker.com/builds/"$(uname -a | awk '{ print $1 }')"/x86_64/docker-${triton_docker_version}.tgz | tar zxvf - -C /tmp/triton-docker
     mv /tmp/triton-docker/docker/docker /usr/local/bin/triton-docker-helper
     rm -Rf /tmp/triton-docker
     chmod +x /usr/local/bin/triton-docker-helper
@@ -64,7 +64,7 @@ function install () {
     echo
 
     # Install the specific version of Docker Compose for Triton
-    curl -Lo /usr/local/bin/triton-compose-helper https://github.com/docker/compose/releases/download/${triton_compose_version}/docker-compose-$(uname -a | awk '{ print $1 }')-x86_64
+    curl -Lo /usr/local/bin/triton-compose-helper https://github.com/docker/compose/releases/download/${triton_compose_version}/docker-compose-"$(uname -a | awk '{ print $1 }')"-x86_64
     chmod +x /usr/local/bin/triton-compose-helper
 
     echo "The triton-compose-helper is now installed."
@@ -74,11 +74,18 @@ function install () {
 # Run all checks
 function checkAll () {
     checkTritonInstalled &&
-    checkDockerInstalled &&
-    currentProfile
+    checkDockerInstalled
 }
 
-case "`basename $0`" in
+# Special case handling if the sub-command is `profile`
+if [ "profile" == "$1" ]
+then
+    currentProfile
+    exit 1
+fi
+
+# Change behavior based on the calling name of this executable
+case "$(basename $0)" in
     triton-docker)
         checkAll &&
         eval "$(triton env)" &&
