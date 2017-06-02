@@ -68,7 +68,24 @@ function currentProfile () {
         local profile_source='default; use `triton profile set <profile name>` to change'
     fi
 
-    echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' (${profile_source})"
+    # Get and the user's account information and CloudAPI URL for parsing later
+    local triton_account="$(triton account get)"
+
+    echo "Executing in '$(echo "${triton_account}" | awk 'NR == 1 {print $2}')' (${profile_source})"
+
+    # Check if CNS is enabled, require it
+    if [ ! "true" == "$(echo "${triton_account}" | awk -F": " '/cns/{print $2}')" ]
+    then
+        echo
+        tput rev  # reverse
+        tput bold # bold
+        echo 'Error! Triton CNS is not enabled.'
+        tput sgr0 # clear
+        echo
+        echo 'Please run the following to activate:'
+        echo '  triton account update triton_cns_enabled=true'
+        echo
+    fi
 }
 
 # Set env vars to make using CNS easier
@@ -90,22 +107,6 @@ function cnsEnvVars () {
         return
     fi
 
-    # Check if CNS is enabled, require it
-    local triton_cns_enabled="$(echo "${triton_account}" | awk -F": " '/cns/{print $2}')"
-    if [ ! "true" == "$triton_cns_enabled" ]
-    then
-        echo
-        tput rev  # reverse
-        tput bold # bold
-        echo 'Error! Triton CNS is required and not enabled.'
-        tput sgr0 # clear
-        echo
-        echo 'Please run:'
-        echo '  triton account update triton_cns_enabled=true'
-        echo
-        exit 1
-    fi
-
     # Get the user's UUID
     local triton_account_uuid="$(echo "${triton_account}" | awk -F": " '/id:/{print $2}')"
 
@@ -115,6 +116,7 @@ function cnsEnvVars () {
     local triton_dc="$(echo "${triton_url}" | awk -F'.' '{print $1}')"
 
     # Set the CNS base for public and private names
+    # Note, this also makes assumptions that only work in our public cloud
     export TRITON_CNS_SEARCH_DOMAIN_PUBLIC="${triton_account_uuid}.${triton_dc}.triton.zone"
     export TRITON_CNS_SEARCH_DOMAIN_PRIVATE="${triton_account_uuid}.${triton_dc}.cns.joyent.com"
 }
