@@ -23,7 +23,7 @@ function currentProfile () {
         local profile_source='default; use `triton profile set <profile name>` to change'
     fi
 
-    echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' (${profile_source}) at $(date +'%r')"
+    echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' (${profile_source})"
 }
 
 # Check if the Docker binary (named triton-docker-helper)
@@ -74,10 +74,17 @@ function install () {
 # Run all checks
 function checkAll () {
     checkTritonInstalled &&
-    checkDockerInstalled &&
-    currentProfile
+    checkDockerInstalled
 }
 
+# Special case handling if the sub-command is `profile`
+if [ "profile" == "$1" ]
+then
+    currentProfile
+    exit 1
+fi
+
+# Change behavior based on the calling name of this executable
 case "`basename $0`" in
     triton-docker)
         checkAll &&
