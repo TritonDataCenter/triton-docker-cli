@@ -8,7 +8,7 @@ Additionally, this script will automatically configure those tools for use with 
 
 This is designed and tested for Linux and MacOS X.
 
-This code also requires [the Triton CLI tools](https://docs.joyent.com/public-cloud/api-access/cloudapi) and [a Triton account](https://docs.joyent.com/public-cloud/getting-started) on either the Triton Public Cloud (Joyent public cloud) or in a private cloud powered by Triton.
+This code also requires [the Triton CLI tools](https://docs.joyent.com/public-cloud/api-access/cloudapi) and [a Triton account](https://docs.joyent.com/public-cloud/getting-started) on either Triton public cloud (Joyent public cloud) or in a private cloud powered by Triton.
 
 Use of this software also requires [a Triton profile configured in the Triton CLI tool](https://docs.joyent.com/public-cloud/api-access/cloudapi#configuration).
 
@@ -17,7 +17,7 @@ Use of this software also requires [a Triton profile configured in the Triton CL
 In a terminal window, run the following command:
 
 ```bash
-sudo curl -o /usr/local/bin/triton-docker https://raw.githubusercontent.com/joyent/triton-docker-cli/master/triton-docker && chmod +x /usr/local/bin/triton-docker && ln -Fs /usr/local/bin/triton-docker /usr/local/bin/triton-compose && ln -Fs /usr/local/bin/triton-docker /usr/local/bin/triton-docker-install
+sudo bash -c 'curl -o /usr/local/bin/triton-docker https://raw.githubusercontent.com/joyent/triton-docker-cli/master/triton-docker && chmod +x /usr/local/bin/triton-docker && ln -Fs /usr/local/bin/triton-docker /usr/local/bin/triton-compose && ln -Fs /usr/local/bin/triton-docker /usr/local/bin/triton-docker-install'
 ```
 
 That command will copy the `triton-docker` shell script from this repo, and link it as `triton-compose` and `triton-docker-install`.
@@ -57,6 +57,26 @@ More about:
 - [Docker commands on Triton](https://www.joyent.com/blog/docker-commands-on-triton)
 - [Docker Compose on Triton](https://www.joyent.com/blog/using-docker-compose)
 - [Optimizing your Docker operations for Triton](https://www.joyent.com/blog/optimizing-docker-on-triton)
+
+### Triton Container Name Service helpers
+
+This will also set some helpful environment variables for using [Triton Container Name Service (CNS)](https://docs.joyent.com/public-cloud/network/cns):
+
+- `TRITON_CNS_SEARCH_DOMAIN_PUBLIC`
+- `TRITON_CNS_SEARCH_DOMAIN_PRIVATE`
+
+Those vars will be automatically set with values appropriate for use in Triton Public Cloud:
+
+```
+TRITON_CNS_SEARCH_DOMAIN_PRIVATE=a42e7881-89d2-459e-bc0b-e9af0bca409a.us-east-3.cns.joyent.com
+TRITON_CNS_SEARCH_DOMAIN_PUBLIC=a42e7881-89d2-459e-bc0b-e9af0bca409a.us-east-3.triton.zone
+```
+
+#### Notes and cautions about CNS env vars
+
+- The mechanism that sets these environment vars only works for Triton Public Cloud. To use Triton Docker CLI with private cloud implementations of Triton, please set the `TRITON_CNS_SEARCH_DOMAIN_PUBLIC` and `TRITON_CNS_SEARCH_DOMAIN_PRIVATE` vars manually
+- These environment variables will be removed following the completion of [CNS-164](https://smartos.org/bugview/CNS-164) and [DOCKER-898](https://smartos.org/bugview/DOCKER-898), which will automatically set the DNS search domain to these values
+- [CNS-164](https://smartos.org/bugview/CNS-164) and [DOCKER-898](https://smartos.org/bugview/DOCKER-898) will also work on private cloud implementations of Triton, solving the problem for everybody
 
 ### Components
 
