@@ -71,7 +71,7 @@ function currentProfile () {
     # Get and the user's account information and CloudAPI URL for parsing later
     local triton_account="$(triton account get)"
 
-    echo "Executing in '$(echo "${triton_account}" | awk 'NR == 1 {print $2}')' (${profile_source})"
+    echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' (${profile_source})"
 
     # Check if CNS is enabled, require it
     if [ ! "true" == "$(echo "${triton_account}" | awk -F": " '/^triton_cns_enabled:/{print $2}')" ]
