@@ -1,4 +1,12 @@
 #!/bin/bash
+
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+# Copyright 2017 Joyent, Inc.
+# Copyright 2023 MNX Cloud, Inc.
+
 set -e -o pipefail
 
 triton_docker_version=1.12.6
@@ -17,8 +25,8 @@ function checkCurlInstalled () {
 # Check if the Docker binary (named triton-docker-helper)
 # and Docker Compose (named triton-compose-helper) are installed and executable
 function checkDockerInstalled () {
-    if 
-        [ ! -f /usr/local/bin/triton-docker-helper ] || 
+    if
+        [ ! -f /usr/local/bin/triton-docker-helper ] ||
         [ ! -x /usr/local/bin/triton-docker-helper ] ||
         [ "${triton_docker_version}," != "$(/usr/local/bin/triton-docker-helper -v | awk '{print $3}')" ] ||
         [ ! -f /usr/local/bin/triton-compose-helper ] ||
@@ -47,6 +55,18 @@ function install () {
     mv /tmp/triton-docker/docker/docker /usr/local/bin/triton-docker-helper
     rm -Rf /tmp/triton-docker
     chmod +x /usr/local/bin/triton-docker-helper
+
+    # Install a good root CA store for docker-compose
+    # We'll use the directory where triton profile outputs docker certs.
+    if ! [[ -d ~/.triton/docker ]]; then
+        mkdir -p ~/.triton/docker
+    fi
+    curl -sf -o ~/.triton/docker/cacert.pem https://curl.haxx.se/ca/cacert.pem
+    cert_ret=$?
+    if (( cert_ret > 0 )); then
+        echo 'Failed to install CA certs for docker-compose. This is a curl error.'
+        echo "See the curl man page for error $cert_ret for help diagnosing this error."
+    fi
 
     echo "The triton-docker-helper is now installed."
     echo
@@ -140,14 +160,15 @@ case "$(basename $0)" in
         checkAll &&
         eval "$(triton env)" &&
         cnsEnvVars &&
-        exec /usr/local/bin/triton-docker-helper $@
+        exec /usr/local/bin/triton-docker-helper "$@"
         ;;
     triton-compose)
         checkAll &&
         eval "$(triton env)" &&
         export COMPOSE_HTTP_TIMEOUT=750 &&
+        export CURL_CA_BUNDLE=~/.triton/docker/cacert.pem
         cnsEnvVars &&
-        exec /usr/local/bin/triton-compose-helper $@
+        exec /usr/local/bin/triton-compose-helper "$@"
         ;;
     triton-docker-install)
         install
