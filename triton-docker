@@ -34,6 +34,7 @@ function checkDockerInstalled () {
         [ "${triton_compose_version}," != "$(/usr/local/bin/triton-compose-helper -v | awk '{print $3}')" ]
     then
         echo 'Additional or updated components are required.'
+        # shellcheck disable=SC2016
         echo 'Please run `sudo triton-docker-install` to continue.'
         echo
         exit 1
@@ -63,9 +64,9 @@ function install () {
     fi
     curl -sf -o ~/.triton/docker/cacert.pem https://curl.haxx.se/ca/cacert.pem
     cert_ret=$?
-    if (( cert_ret > 0 )); then
-        echo 'Failed to install CA certs for docker-compose. This is a curl error.'
-        echo "See the curl man page for error $cert_ret for help diagnosing this error."
+    if (( cert_ret != 0 )); then
+        echo 'Failed to install CA certs for docker-compose. This is a curl error.' >&2
+        echo "See the curl man page for error $cert_ret for help diagnosing this error." >&2
     fi
 
     echo "The triton-docker-helper is now installed."
@@ -83,13 +84,16 @@ function install () {
 function currentProfile () {
     if [ -n "$TRITON_PROFILE" ]
     then
+        # shellcheck disable=SC2016
         local profile_source='via env var; use `eval "$(triton env <profile name>)"` to change'
     else
+        # shellcheck disable=SC2016
         local profile_source='default; use `triton profile set <profile name>` to change'
     fi
 
     # Get and the user's account information and CloudAPI URL for parsing later
-    local triton_account="$(triton account get)"
+    local triton_account
+    triton_account="$(triton account get)"
 
     echo "Executing in '$(triton profile get | awk 'NR == 1 {print $2}')' (${profile_source})"
 
@@ -110,6 +114,10 @@ function currentProfile () {
 
 # Set env vars to make using CNS easier
 function cnsEnvVars () {
+    local triton_account
+    local triton_url
+    local triton_account_uuid
+    local triton_dc
 
     # If the CNS env vars are already set, don't bother continuing
     if [ -n "$TRITON_CNS_SEARCH_DOMAIN_PUBLIC" ] && [ -n "$TRITON_CNS_SEARCH_DOMAIN_PRIVATE" ]
@@ -118,8 +126,8 @@ function cnsEnvVars () {
     fi
 
     # Get and the user's account information and CloudAPI URL for parsing later
-    local triton_account="$(triton account get)"
-    local triton_url="$(triton profile get | awk -F"/" '/url:/{print $3}')"
+    triton_account="$(triton account get)"
+    triton_url="$(triton profile get | awk -F"/" '/url:/{print $3}')"
 
     # Do not continue if the target is not a Triton Public Cloud data center
     if [ ! ".api.joyent.com" == "${triton_url: -15}" ]
@@ -128,12 +136,12 @@ function cnsEnvVars () {
     fi
 
     # Get the user's UUID
-    local triton_account_uuid="$(echo "${triton_account}" | awk -F": " '/^id:/{print $2}')"
+    triton_account_uuid="$(echo "${triton_account}" | awk -F": " '/^id:/{print $2}')"
 
     # Get current data center name
     # Note: this makes assumptions that work in our public cloud, but might not work elsewhere
     # Further note: set TRITON_CNS_SUFFIX_PUBLIC and TRITON_CNS_SUFFIX_PRIVATE to work around this
-    local triton_dc="$(echo "${triton_url}" | awk -F'.' '{print $1}')"
+    triton_dc="$(echo "${triton_url}" | awk -F'.' '{print $1}')"
 
     # Set the CNS base for public and private names
     # Note, this also makes assumptions that only work in our public cloud
@@ -155,7 +163,7 @@ then
 fi
 
 # Change behavior based on the calling name of this executable
-case "$(basename $0)" in
+case "$(basename "$0")" in
     triton-docker)
         checkAll &&
         eval "$(triton env)" &&
@@ -173,4 +181,6 @@ case "$(basename $0)" in
     triton-docker-install)
         install
         ;;
+    *)
+        echo "Unsupported: $(basename "$0")"
 esac
