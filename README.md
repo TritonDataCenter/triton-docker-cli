@@ -1,5 +1,40 @@
 # Triton Docker CLI helper
 
+**NOTE:** You almost certainly should not use this repo anymore.
+
+## Set up `docker` to use Triton without using the script in this repo
+
+With modern versions of `docker` and Triton the script in this repo is no longer
+necessary. Before you begin, make sure you have installed and set up the
+[`triton`][1] cli.
+
+First, generate your client certificate.
+
+```sh
+triton profile docker-setup
+```
+
+Once that's done, in any shell you want to use `docker` with Triton, run the
+following. Most people place this in their shell rc file (`.bashrc`, `.zshrc`,
+etc.).
+
+```sh
+eval "$(triton env -d)"
+```
+
+Once this is done, just use `docker` as you normally would.
+
+See the [`node-triton`][1] documentation for additional details and command line
+arguments available.
+
+[1]: /TritonDataCenter/node-triton/
+
+----
+
+## Information below is for historical record
+
+----
+
 This script installs known good, tested versions of the Docker (now Moby) and Docker Compose CLI tools for use with Triton.
 
 Additionally, this script will automatically configure those tools for use with Triton when you use them, making it easy to switch between Docker on your laptop and Docker on Triton.
